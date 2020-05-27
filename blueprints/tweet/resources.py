@@ -91,6 +91,8 @@ class TweetList(Resource):
         args = parser.parse_args()
         qry = Tweets.query
 
+        qry = qry.order_by(desc(Tweets.created_at))
+
         if args['tweet'] is not None:
             qry = qry.filter_by(name=args['tweet'])
 
@@ -106,5 +108,34 @@ class TweetList(Resource):
     def options(self):
         return{}, 200
 
+class TweetUser(Resource):
+    def __init__(self):
+        pass
+
+    @user_required
+    def get (self):
+        parser = reqparse.RequestParser()
+        parser.add_argument('tweet', location='args')
+
+        claims=get_jwt_claims()
+        args = parser.parse_args()
+        qry = Tweets.query.filter_by(user_id=claims['id'])
+        qry = qry.order_by(desc(Tweets.created_at))
+
+        if args['tweet'] is not None:
+            qry = qry.filter_by(name=args['tweet'])
+
+        rows = []
+        for row in qry.all():
+            user = Users.query.filter_by(id=row.user_id).first()
+            marshalUser = marshal(user, Users.response_field)
+            marshalqry = marshal(row, Tweets.response_field)
+            marshalqry["user_id"]=marshalUser
+            rows.append(marshalqry)
+        return rows, 200
+
+    def options(self):
+        return{}, 200
 api.add_resource(TweetList, '', '')
+api.add_resource(TweetUser, '', '/user')
 api.add_resource(TweetResource, '', '/<id>')
