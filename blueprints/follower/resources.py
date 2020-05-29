@@ -11,19 +11,32 @@ from sqlalchemy import desc
 from blueprints import user_required
 from flask_jwt_extended import create_access_token, get_jwt_identity, jwt_required, get_jwt_claims
 
-bp_tweet = Blueprint('follower', __name__)
-api = Api(bp_tweet)
+bp_follower = Blueprint('follower', __name__)
+api = Api(bp_follower)
 
 
 class FollowerResource(Resource):
     def __init__(self):
         pass
 
-    def get(self, id):
-        qry = Followers.query.get(id)
-        if qry is not None:
-            return marshal(qry, Followers.response_field), 200
-        return {'status': 'NOT_FOUND'}, 404
+    @user_required
+    def get(self):
+        claims = get_jwt_claims()
+        qry = Users.query.filter_by(id=claims["id"]).first()
+        user_id=qry.id
+
+        follow = Followers.query.filter_by(user_id=user_id).all()
+
+        rows = []
+        for row in follow:
+            user = Users.query.filter_by(id=row.follower).first()
+            marshalUser = marshal(user, Users.response_field)
+            marshalqry = marshal(row, Followers.response_field)
+
+            marshalqry["follower"]=marshalUser
+            rows.append(marshalqry)
+        return rows, 200
+
 
     @user_required
     def post(self):
@@ -33,7 +46,7 @@ class FollowerResource(Resource):
 
         claims = get_jwt_claims()
         print(claims['id'])
-        qry = Users.query.filter_by(user_id=claims["id"]).first()
+        qry = Users.query.filter_by(id=claims["id"]).first()
         print(qry)
         user_id = qry.id
 
@@ -65,7 +78,7 @@ class FollowerResource(Resource):
 
         return marshal(follower, Followers.response_field), 200
 
-    @seller_required
+    # @seller_required
     def delete(self, id):
         claims = get_jwt_claims()
         qry_user = Users.query.filter_by(user_id=claims['id']).first()
@@ -119,5 +132,5 @@ class FollowerList(Resource):
     def options(self):
         return{}, 200
 
-api.add_resource(FollowerList, '', '')
+api.add_resource(FollowerList, '/list')
 api.add_resource(FollowerResource, '', '/<id>')

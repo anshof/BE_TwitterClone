@@ -76,7 +76,7 @@ class TweetResource(Resource):
         db.session.commit()
         return {'status': 'DELETED'}, 200
 
-    def options(self):
+    def options(self, id=None):
         return{}, 200
 
 class TweetList(Resource):

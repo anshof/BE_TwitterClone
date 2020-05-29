@@ -23,7 +23,7 @@ def user_required(fn):
     def wrapper(*args, **kwargs):
         verify_jwt_in_request()
         claims = get_jwt_claims()
-        if claims['status'] == 'false' or claims['status'] == 'False':
+        if claims['status'] != 'true':
             return {'status': 'FORBIDDEN', 'message': 'User Only!'}, 403
         else:
             return fn(*args, **kwargs)
@@ -75,10 +75,12 @@ def after_request(response):
 from blueprints.user.resources import bp_user
 from blueprints.login import bp_login
 from blueprints.tweet.resources import bp_tweet
+from blueprints.follower.resources import bp_follower
 
 
 app.register_blueprint(bp_user, url_prefix='/user')
 app.register_blueprint(bp_login, url_prefix='/login')
 app.register_blueprint(bp_tweet, url_prefix='/tweet')
+app.register_blueprint(bp_follower, url_prefix='/follower')
 
 db.create_all()

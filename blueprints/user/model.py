@@ -22,7 +22,8 @@ class Users(db.Model):
     updated_at = db.Column(db.DateTime(timezone=True), onupdate=db.func.now())
 
     tweets = db.relationship('Tweets', backref='user', lazy=True)
-
+    followers = db.relationship('Followers', backref='user', lazy=True)
+    
     response_field = {
         'id': fields.Integer,
         'name': fields.String,
