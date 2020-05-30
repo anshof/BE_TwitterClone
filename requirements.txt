@@ -10,3 +10,4 @@ requests
 pytest
 simplecache
 pytest-cov
+numpy

@@ -48,12 +48,6 @@ class UserResource(Resource):
             return marshal(qry, Users.response_field), 200
         return {'status': 'NOT_FOUND'}, 404  
 
-    # def get(self, id):
-    #     qry = Users.query.get(id)
-    #     if qry is not None:
-    #         return marshal(qry, Users.response_field), 200
-    #     return {'status': 'NOT_FOUND'}, 404
-
     @user_required
     def patch(self, id):
         parser = reqparse.RequestParser()
@@ -108,4 +102,18 @@ class UserResource(Resource):
     def options(self):
         return{}, 200
 
+# class UserFollow(Resource):
+#     def __init__(self):
+#         pass
+
+#     @user_required
+#     def get(self):
+#         claims = get_jwt_claims()
+#         qry = Users.query.filter_by(id=claims['id']).first()
+
+
+#     def options(self):
+#         return{}, 200
+# api.add_resource(UserFollow, 'follow', '')
 api.add_resource(UserResource, '', '/<id>')
+

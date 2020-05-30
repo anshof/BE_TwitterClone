@@ -5,7 +5,8 @@ from flask import Blueprint
 from flask_restful import Api, Resource, marshal, reqparse, inputs
 from .model import Followers
 from blueprints.user.model import Users
-
+# import numpy as np
+from numpy import *
 from blueprints import db, app
 from sqlalchemy import desc
 from blueprints import user_required
@@ -19,6 +20,7 @@ class FollowerResource(Resource):
     def __init__(self):
         pass
 
+    # get follower
     @user_required
     def get(self):
         claims = get_jwt_claims()
@@ -37,7 +39,7 @@ class FollowerResource(Resource):
             rows.append(marshalqry)
         return rows, 200
 
-
+    # post follower
     @user_required
     def post(self):
         parser = reqparse.RequestParser()
@@ -78,7 +80,6 @@ class FollowerResource(Resource):
 
         return marshal(follower, Followers.response_field), 200
 
-    # @seller_required
     def delete(self, id):
         claims = get_jwt_claims()
         qry_user = Users.query.filter_by(user_id=claims['id']).first()
@@ -99,34 +100,31 @@ class FollowerList(Resource):
     def __init__(self):
         pass
 
+    # get user who do not follow us
+    @user_required
     def get(self):
-        parser = reqparse.RequestParser()
-        parser.add_argument('p', type=int, location='args', default=1)
-        parser.add_argument('rp', type=int, location='args', default=25)
-        parser.add_argument('follower', location='args')
-       
-        parser.add_argument('orderby', location='args', help='invalid orderby value')
-        parser.add_argument('sort', location='args',
-                            help='invalid sort value', choices=('desc', 'asc'))
+        claims = get_jwt_claims()
+        qry = Users.query.filter_by(id=claims["id"]).first()
+        user_id=qry.id
 
-        args = parser.parse_args()
-        offset = (args['p'] * args['rp']) - args['rp']
-        qry = Followers.query
-
-        if args['follower'] is not None:
-            qry = qry.filter_by(name=args['follower'])
-
-        if args['orderby'] is not None:
-            if args['orderby'] == 'follower':
-                if args['sort'] == 'desc':
-                    qry = qry.order_by(desc(Followers.follower))
-                else:
-                    qry = qry.order_by(Followers.follower)
-
+        follow = Followers.query.filter_by(user_id=user_id)
+     
         rows = []
-        for row in qry.limit(args['rp']).offset(offset).all():
-            rows.append(marshal(row, Followers.response_field))
+        for row in follow:
+            print("----------------", row)
+            alluser=Users.query.all()
+            # notall=alluser.filter_by(id!=row.follower).first()
+            # marshalall=marshal(alluser, Users.response_field)
+            user = Users.query.filter_by(id=row.follower).first()
+            # nofollow=alluser not in user
+            # print("------", alluser)
+            # print("------", Users.query)
 
+            marshalUser = marshal(user, Users.response_field)
+            marshalqry = marshal(row, Followers.response_field)
+
+            marshalqry["follower"]=marshalUser
+            rows.append(marshalqry)
         return rows, 200
 
     def options(self):
