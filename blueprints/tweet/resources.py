@@ -5,6 +5,7 @@ from flask import Blueprint
 from flask_restful import Api, Resource, marshal, reqparse, inputs
 from .model import Tweets
 from blueprints.user.model import Users
+from blueprints.follower.model import Followers
 
 from blueprints import db, app
 from sqlalchemy import desc
@@ -19,11 +20,33 @@ class TweetResource(Resource):
     def __init__(self):
         pass
 
-    def get(self, id):
-        qry = Tweets.query.get(id)
-        if qry is not None:
-            return marshal(qry, Tweets.response_field), 200
-        return {'status': 'NOT_FOUND'}, 404
+    # get tweet by following-user
+    @user_required
+    def get(self) :
+        claims = get_jwt_claims()
+        qry = Users.query.filter_by(id=claims["id"]).first()
+        user_id=qry.id
+
+        followers = Followers.query.filter_by(user_id=user_id).all()
+        resfol = marshal(followers, Followers.response_field)
+
+        arr_followers = [user_id]
+        for follow in followers :
+            arr_followers.append(follow.follower)
+
+        qrytweet=Tweets.query
+        qrytweet= qrytweet.order_by(desc(Tweets.created_at))
+
+        tweet = qrytweet.filter(Tweets.user_id.in_(arr_followers)).all()
+
+        rows = []
+        for row in tweet:
+            user = Users.query.filter_by(id=row.user_id).first()
+            marshalUser = marshal(user, Users.response_field)
+            marshalqry = marshal(row, Tweets.response_field)
+            marshalqry["user_id"]=marshalUser
+            rows.append(marshalqry)
+        return rows, 200
 
     @user_required
     def post(self):
@@ -83,10 +106,10 @@ class TweetList(Resource):
     def __init__(self):
         pass
 
+    # get all tweet
     def get(self):
         parser = reqparse.RequestParser()
         parser.add_argument('tweet', location='args')
-        # parser.add_argument('sort', location='args',help='invalid sort value', choices=('desc', 'asc'))
         
         args = parser.parse_args()
         qry = Tweets.query
@@ -112,6 +135,7 @@ class TweetUser(Resource):
     def __init__(self):
         pass
 
+    # get tweet by login-user
     @user_required
     def get (self):
         parser = reqparse.RequestParser()
@@ -136,6 +160,8 @@ class TweetUser(Resource):
 
     def options(self):
         return{}, 200
+
+  
 api.add_resource(TweetList, '', '')
 api.add_resource(TweetUser, '', '/user')
-api.add_resource(TweetResource, '', '/<id>')
+api.add_resource(TweetResource, '', '/tweet')

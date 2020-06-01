@@ -5,7 +5,7 @@ from flask import Blueprint
 from flask_restful import Api, Resource, marshal, reqparse, inputs
 from .model import Followers
 from blueprints.user.model import Users
-# import numpy as np
+
 from numpy import *
 from blueprints import db, app
 from sqlalchemy import desc
@@ -26,6 +26,8 @@ class FollowerResource(Resource):
         claims = get_jwt_claims()
         qry = Users.query.filter_by(id=claims["id"]).first()
         user_id=qry.id
+
+        print("+++++", qry)
 
         follow = Followers.query.filter_by(user_id=user_id).all()
 
@@ -100,26 +102,43 @@ class FollowerList(Resource):
     def __init__(self):
         pass
 
-    # get user who do not follow us
+    # get user we follow
     @user_required
     def get(self):
         claims = get_jwt_claims()
         qry = Users.query.filter_by(id=claims["id"]).first()
         user_id=qry.id
 
-        follow = Followers.query.filter_by(user_id=user_id)
-     
+        follow = Followers.query.filter_by(user_id=user_id).all()
         rows = []
         for row in follow:
-            print("----------------", row)
-            alluser=Users.query.all()
-            # notall=alluser.filter_by(id!=row.follower).first()
-            # marshalall=marshal(alluser, Users.response_field)
-            user = Users.query.filter_by(id=row.follower).first()
-            # nofollow=alluser not in user
-            # print("------", alluser)
-            # print("------", Users.query)
+            follower_id=row.follower
+            rows.append(follower_id)
+     
+        user = Users.query.filter(~Users.id.in_(rows)).filter(Users.id!=claims['id']).all()
 
+        return marshal(user, Users.response_field), 200
+
+    def options(self):
+        return{}, 200
+
+class Following(Resource):
+    def __init__(self):
+        pass
+
+    @user_required
+    def get(self):
+        claims = get_jwt_claims()
+        qry = Users.query.filter_by(id=claims["id"]).first()
+        user_id=qry.id
+
+        print("+++++", qry)
+
+        follow = Followers.query.filter_by(follower=user_id).all()
+
+        rows = []
+        for row in follow:
+            user = Users.query.filter_by(id=row.follower).first()
             marshalUser = marshal(user, Users.response_field)
             marshalqry = marshal(row, Followers.response_field)
 
@@ -130,5 +149,6 @@ class FollowerList(Resource):
     def options(self):
         return{}, 200
 
+api.add_resource(Following, '/follow')
 api.add_resource(FollowerList, '/list')
 api.add_resource(FollowerResource, '', '/<id>')
