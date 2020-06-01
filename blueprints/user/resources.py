@@ -102,18 +102,5 @@ class UserResource(Resource):
     def options(self):
         return{}, 200
 
-# class UserFollow(Resource):
-#     def __init__(self):
-#         pass
-
-#     @user_required
-#     def get(self):
-#         claims = get_jwt_claims()
-#         qry = Users.query.filter_by(id=claims['id']).first()
-
-
-#     def options(self):
-#         return{}, 200
-# api.add_resource(UserFollow, 'follow', '')
 api.add_resource(UserResource, '', '/<id>')
 

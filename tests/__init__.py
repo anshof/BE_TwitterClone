@@ -2,11 +2,9 @@ import pytest, json, logging
 from flask import Flask, request, json
 from blueprints import app
 from app import cache, logging
-from blueprints.client.model import Clients
+from blueprints.tweet.model import Tweets
+from blueprints.follower.model import Followers
 from blueprints.user.model import Users
-from blueprints.book.model import Books
-from blueprints.rent.model import Rents
-# from blueprints.auth import auth
 import hashlib, uuid
 from blueprints import db
 
@@ -28,20 +26,19 @@ def init_database():
     encoded = ('%s%s' % ("password", salt)).encode('utf-8')
     hash_pass = hashlib.sha512(encoded).hexdigest()
 
-    client_internal = Clients(client_key="internal", client_secret=hash_pass, status="True", salt=salt)
-    client_noninternal = Clients(client_key="noninternal", client_secret=hash_pass, status="False", salt=salt)
-    db.session.add(client_internal)
-    db.session.add(client_noninternal)
+    user_required = Users(name="shofi", username="@shofiya", password=hash_pass, bio="ini shofi", pict_profile="ini pict", pict_bg="ini pict", salt=salt)
+
+    # user_nonrequired = Users(name="noshofi", username="@noshofiya", password=hash_pass, bio="ini shofi", pict_profile="ini pict", pict_bg="ini pict", salt=salt, status="false")
+
+    db.session.add(user_required)
+    # db.session.add(user_nonrequired)
     db.session.commit()
 
-    user = Users(name="shofi", age=25, sex="female", client_id=1)
-    book = Books(title="shofiya", isbn="123-456", writer="tere liye")
-    db.session.add(user)
-    db.session.add(book)
-    db.session.commit()
-
-    rent = Rents(user_id=1, book_id=1, return_date="01:10:20.000013")
-    db.session.add(rent)
+    follower = Followers(follower=6, user_id=1)
+    tweet = Tweets(tweet="ini twit", user_id=1)
+    # db.session.add(user)
+    db.session.add(follower)
+    db.session.add(tweet)
     db.session.commit()
 
     yield db
@@ -50,11 +47,11 @@ def create_token():
     token = cache.get('test-token')
     if token is None:
         data = {
-            'client_key': 'internal',
-            'client_secret': 'password'
+            'username': '@shofiya',
+            'password': 'password'
         }
         req = call_client(request)
-        res = req.get('/auth?', query_string=data, content_type='application/json')
+        res = req.get('/login?', query_string=data, content_type='application/json')
         res_json = json.loads(res.data)
 
         logging.warning('RESULT:%s', res_json)
